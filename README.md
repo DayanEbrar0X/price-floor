@@ -137,12 +137,43 @@ Note: this needs collected history to mean anything. The first run has nothing t
 
 ---
 
+## Running it locally
+
+```
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements-dev.txt
+flask --app src.app run
+```
+
+Then open http://127.0.0.1:5000. Tests: `pytest`.
+
+Routes:
+
+- `GET /` — the search form
+- `POST /echo_user_input` — echoes the input back, then lists matching deals
+- `GET /health` — returns `{"status": "ok"}`, used as a deploy smoke check
+
+## Deployment
+
+Hosted on Vercel, connected to this GitHub repo. Every push to `main` deploys automatically.
+
+- `api/index.py` is the entry point Vercel looks for; it imports the Flask app.
+- `vercel.json` routes all paths to that function and tells the bundler to include the Jinja templates, which are not picked up automatically because nothing imports them.
+- `Procfile` is left in place so the app still runs under gunicorn anywhere else. Vercel ignores it.
+
+GitHub Actions runs the test suite on every push and pull request to `main`. Config in `.github/workflows/ci.yml`.
+
 ## Status
 
 - [x] Pick the project, confirm the data source works
 - [x] Write the assignment paragraph
 - [x] Architecture diagram
-- [ ] Submit milestone 1
+- [x] Submit milestone 1
+- [x] Flask app that echoes user input
+- [x] Live CheapShark search wired into the echo
+- [x] Test suite, 8 tests
+- [x] GitHub repo and CI
+- [ ] Deploy to Vercel, submit the public URL
 - [ ] Postgres schema and migrations
 - [ ] Collector worker
 - [ ] Analyzer worker and scoring
@@ -154,6 +185,9 @@ Note: this needs collected history to mean anything. The first run has nothing t
 
 ## Notes
 
+- Repo: https://github.com/DayanEbrar0X/price-floor
+- The milestone 2 app reads CheapShark live on each request. It does not store anything yet — the collector, the database, and the deal score come next. Until then the table shows advertised discounts, which is exactly the thing the product is meant to improve on.
+- Heroku dropped its free tier in November 2022, so we deployed on Vercel instead. The grading criteria asks for a public URL, not a specific host.
 - Single data source on purpose. Multi-store collection means reconciling game titles across stores, which is a real problem but not the one this assignment grades. If more collection surface is wanted, a second collector process drops into the existing shape without changing anything else.
 - Rendered submission page: https://claude.ai/code/artifact/42be8cf1-9515-454b-acac-c5ceb957ae23
 - The page was published from the repo root before being moved here. To update it from this path, pass that URL explicitly or it'll create a second artifact instead of replacing the first.
