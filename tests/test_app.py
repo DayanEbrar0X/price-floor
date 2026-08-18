@@ -7,71 +7,79 @@ from src.app import app
 @pytest.fixture
 def client():
     app.config["TESTING"] = True
-    with app.test_client() as client:
-        yield client
+    with app.test_client() as c:
+        yield c
 
 
-def test_index_serves_the_form(client):
-    body = client.get("/").get_data(as_text=True)
-    assert 'action="/echo_user_input"' in body
-    assert 'name="user_input"' in body
+def no_deals(title, limit=12):
+    return []
+
+
+def test_form_is_there(client):
+    html = client.get("/").get_data(as_text=True)
+    assert 'action="/echo_user_input"' in html
+    assert 'name="user_input"' in html
 
 
 def test_health(client):
     assert client.get("/health").get_json() == {"status": "ok"}
 
 
-def test_input_is_echoed_back(client, monkeypatch):
-    monkeypatch.setattr(cheapshark, "search_deals", lambda title, limit=12: [])
-    body = client.post("/echo_user_input", data={"user_input": "Hollow Knight"}).get_data(as_text=True)
-    assert "You entered: Hollow Knight" in body
+def test_it_echoes(client, monkeypatch):
+    monkeypatch.setattr(cheapshark, "search_deals", no_deals)
+    html = client.post("/echo_user_input", data={"user_input": "Hollow Knight"}).get_data(as_text=True)
+    assert "You entered: Hollow Knight" in html
 
 
-def test_deals_are_listed(client, monkeypatch):
-    deal = {
-        "title": "Celeste",
-        "store": "Steam",
-        "sale_price": 4.99,
-        "normal_price": 19.99,
-        "savings": 75,
-        "is_free": False,
+def test_deals_render(client, monkeypatch):
+    fake = [{
+        "title": "Celeste", "store": "Steam",
+        "sale_price": 4.99, "normal_price": 19.99,
+        "savings": 75, "is_free": False,
         "url": "https://example.com/deal",
-    }
-    monkeypatch.setattr(cheapshark, "search_deals", lambda title, limit=12: [deal])
-    body = client.post("/echo_user_input", data={"user_input": "celeste"}).get_data(as_text=True)
-    assert "Celeste" in body
-    assert "$4.99" in body
-    assert "75%" in body
+    }]
+    monkeypatch.setattr(cheapshark, "search_deals", lambda t, limit=12: fake)
+
+    html = client.post("/echo_user_input", data={"user_input": "celeste"}).get_data(as_text=True)
+    assert "Celeste" in html
+    assert "$4.99" in html
+    assert "75%" in html
 
 
-def test_empty_input_returns_to_the_form(client):
-    body = client.post("/echo_user_input", data={"user_input": "   "}).get_data(as_text=True)
-    assert "You entered:" not in body
+def test_blank_input_just_goes_back(client):
+    html = client.post("/echo_user_input", data={"user_input": "   "}).get_data(as_text=True)
+    assert "You entered:" not in html
 
 
-def test_input_is_escaped(client, monkeypatch):
-    monkeypatch.setattr(cheapshark, "search_deals", lambda title, limit=12: [])
-    body = client.post("/echo_user_input", data={"user_input": "<script>alert(1)</script>"}).get_data(as_text=True)
-    assert "<script>alert(1)</script>" not in body
-    assert "&lt;script&gt;" in body
+def test_no_script_injection(client, monkeypatch):
+    monkeypatch.setattr(cheapshark, "search_deals", no_deals)
+    html = client.post("/echo_user_input", data={"user_input": "<script>alert(1)</script>"}).get_data(as_text=True)
+    assert "<script>alert(1)</script>" not in html
+    assert "&lt;script&gt;" in html
 
 
-def test_upstream_failure_still_echoes(client, monkeypatch):
-    def boom(title, limit=12):
-        raise RuntimeError("upstream down")
+def test_echoes_even_when_api_dies(client, monkeypatch):
+    def dead(title, limit=12):
+        raise RuntimeError("nope")
 
-    monkeypatch.setattr(cheapshark, "search_deals", boom)
-    body = client.post("/echo_user_input", data={"user_input": "Portal"}).get_data(as_text=True)
-    assert "You entered: Portal" in body
-    assert "Could not reach CheapShark" in body
+    monkeypatch.setattr(cheapshark, "search_deals", dead)
+    html = client.post("/echo_user_input", data={"user_input": "Portal"}).get_data(as_text=True)
+    assert "You entered: Portal" in html
+    assert "Could not reach CheapShark" in html
 
 
-def test_shape_maps_a_raw_deal():
-    shaped = cheapshark._shape(
-        {"title": "Braid", "storeID": "1", "salePrice": "2.50", "normalPrice": "10.00", "savings": "75.0", "dealID": "abc"},
-        {"1": "Steam"},
-    )
-    assert shaped["store"] == "Steam"
-    assert shaped["sale_price"] == 2.5
-    assert shaped["savings"] == 75
-    assert shaped["is_free"] is False
+def test_deal_parsing(monkeypatch):
+    def fake_hit(path, params):
+        if path == "stores":
+            return [{"storeID": "1", "storeName": "Steam"}]
+        return [{"title": "Braid", "storeID": "1", "salePrice": "2.50",
+                 "normalPrice": "10.00", "savings": "75.0", "dealID": "abc"}]
+
+    monkeypatch.setattr(cheapshark, "hit", fake_hit)
+    cheapshark.store_cache.clear()
+
+    d = cheapshark.search_deals("braid")[0]
+    assert d["store"] == "Steam"
+    assert d["sale_price"] == 2.5
+    assert d["savings"] == 75
+    assert d["is_free"] is False

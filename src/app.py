@@ -12,18 +12,20 @@ def index():
 
 @app.route("/echo_user_input", methods=["POST"])
 def echo_user_input():
-    query = request.form.get("user_input", "").strip()
-    if not query:
+    text = request.form.get("user_input", "").strip()
+    if not text:
         return render_template("index.html", query=None, deals=None, error=None)
 
+    deals = []
+    err = None
     try:
-        deals = cheapshark.search_deals(query)
-        error = None
+        deals = cheapshark.search_deals(text)
     except Exception:
-        deals = []
-        error = "Could not reach CheapShark just now. The search above was received; try again in a moment."
+        # cheapshark goes down sometimes and the whole point of the page is
+        # echoing the input back, so don't let their outage take us with it
+        err = "Could not reach CheapShark just now. The search above was received; try again in a moment."
 
-    return render_template("index.html", query=query, deals=deals, error=error)
+    return render_template("index.html", query=text, deals=deals, error=err)
 
 
 @app.route("/health")
