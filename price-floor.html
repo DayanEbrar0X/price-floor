@@ -1,0 +1,257 @@
+<title>Price Floor</title>
+<style>
+  :root {
+    --ground: #F5F7F9;
+    --surface: #FFFFFF;
+    --ink: #131820;
+    --muted: #5C6673;
+    --rule: #D9DEE5;
+    --rule-soft: #E7EBF0;
+    --accent: #B5470E;
+    --accent-soft: #F4E6DC;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0E1218;
+      --surface: #161C24;
+      --ink: #E4E8EE;
+      --muted: #939DAB;
+      --rule: #2A323D;
+      --rule-soft: #202832;
+      --accent: #F2924E;
+      --accent-soft: #2B1D12;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #0E1218;
+    --surface: #161C24;
+    --ink: #E4E8EE;
+    --muted: #939DAB;
+    --rule: #2A323D;
+    --rule-soft: #202832;
+    --accent: #F2924E;
+    --accent-soft: #2B1D12;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.65;
+    margin: 0;
+    padding: 64px 24px 96px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 56px;
+  }
+  .col { width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 20px; }
+  .wide { width: 100%; max-width: 980px; display: flex; flex-direction: column; gap: 20px; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0;
+  }
+  h1 {
+    font-size: 42px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0;
+    font-weight: 600;
+  }
+  h2 {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  p { margin: 0; }
+  .lede { color: var(--muted); font-size: 18px; }
+
+  figure { margin: 0; display: flex; flex-direction: column; gap: 14px; }
+  .frame {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 28px 20px;
+    overflow-x: auto;
+  }
+  svg { display: block; width: 100%; min-width: 720px; height: auto; color: var(--ink); }
+  figcaption {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 640px;
+  }
+
+  table { border-collapse: collapse; width: 100%; font-family: var(--mono); font-size: 13px; }
+  th {
+    text-align: left;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+    padding: 0 16px 10px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  td {
+    padding: 12px 16px 12px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+  td:first-child { color: var(--ink); white-space: nowrap; }
+  td:nth-child(2) { color: var(--muted); white-space: nowrap; }
+  td:last-child { color: var(--muted); padding-right: 0; }
+  .tag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+</style>
+
+<header class="col">
+  <p class="eyebrow">Course project &middot; product description and architecture</p>
+  <h1>Price Floor</h1>
+  <p class="lede">A game-deal tracker that judges a sale against the game&rsquo;s own price history instead of its advertised discount.</p>
+</header>
+
+<section class="col">
+  <h2>1 &nbsp;&middot;&nbsp; Product description</h2>
+  <p>Price Floor is aimed at a small but real frustration: PC game prices swing constantly across a dozen storefronts, and a banner reading &ldquo;75% off&rdquo; tells a shopper nothing about whether that price is actually good or just back to where it sat two months ago. The product pulls deal listings from CheapShark&rsquo;s public API on a schedule, records every price it sees, and compares today&rsquo;s price against each game&rsquo;s own stored history, so it can say plainly whether a sale is a genuine low or routine noise. It is built for budget-minded PC gamers and students who keep a wishlist and are willing to wait for the right moment to buy, rather than for collectors chasing new releases at launch. What separates it from the store pages and deal aggregators it draws from is that it does not rank deals by advertised discount at all &mdash; it keeps its own price record over time and scores each deal against that record, so a game marked down 20% from a price that has never dropped before is surfaced ahead of one marked down 75% from an inflated list price nobody has paid in a year.</p>
+</section>
+
+<section class="wide">
+  <h2>2 &nbsp;&middot;&nbsp; Architecture</h2>
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 900 660" role="img" aria-label="Architecture diagram: a collector worker fetches deals from the CheapShark public API every six hours and writes price rows to Postgres; a separate analyzer worker reads that history and writes back a deal score; a read-only REST API queries Postgres and is the only path the browser front end uses to reach the data.">
+        <defs>
+          <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <g font-family="ui-monospace, Menlo, Consolas, monospace">
+
+          <rect x="30" y="165" width="840" height="305" rx="3" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-dasharray="5 4"/>
+          <text x="46" y="187" font-size="11" letter-spacing="1.6" fill="currentColor" fill-opacity="0.55">BACK END &#183; SERVER SIDE, NO DIRECT USER ACCESS</text>
+
+          <rect x="30" y="530" width="840" height="110" rx="3" fill="none" stroke="currentColor" stroke-opacity="0.3" stroke-dasharray="5 4"/>
+          <text x="46" y="552" font-size="11" letter-spacing="1.6" fill="currentColor" fill-opacity="0.55">FRONT END &#183; WHAT THE USER TOUCHES</text>
+
+          <rect x="60" y="48" width="170" height="62" rx="3" fill="none" stroke="currentColor" stroke-opacity="0.45" stroke-dasharray="4 3"/>
+          <text x="145" y="74" font-size="13" text-anchor="middle" fill="currentColor">CheapShark API</text>
+          <text x="145" y="93" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">public JSON, no key</text>
+
+          <line x1="105" y1="205" x2="105" y2="114" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah)"/>
+          <line x1="145" y1="114" x2="145" y2="201" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah)"/>
+          <text x="163" y="142" font-size="11" fill="currentColor" fill-opacity="0.7">GET /deals &#183; every 6 h</text>
+          <text x="163" y="162" font-size="11" fill="currentColor" fill-opacity="0.7">JSON listings</text>
+
+          <rect x="60" y="205" width="170" height="95" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+          <text x="145" y="240" font-size="13" text-anchor="middle" fill="var(--accent)">Collector</text>
+          <text x="145" y="262" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">python worker</text>
+          <text x="145" y="279" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">cron, 6 h timer</text>
+
+          <rect x="365" y="205" width="170" height="95" rx="3" fill="none" stroke="currentColor" stroke-opacity="0.75" stroke-width="1.3"/>
+          <text x="450" y="240" font-size="13" text-anchor="middle" fill="currentColor">PostgreSQL</text>
+          <text x="450" y="262" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">games</text>
+          <text x="450" y="279" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">price_snapshots</text>
+
+          <rect x="670" y="205" width="170" height="95" rx="3" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+          <text x="755" y="240" font-size="13" text-anchor="middle" fill="var(--accent)">Analyzer</text>
+          <text x="755" y="262" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">python worker</text>
+          <text x="755" y="279" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">runs after each pull</text>
+
+          <line x1="230" y1="240" x2="361" y2="240" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah)"/>
+          <text x="295" y="231" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.7">writes price rows</text>
+
+          <line x1="535" y1="228" x2="666" y2="228" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah)"/>
+          <text x="600" y="219" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.7">reads 90-day history</text>
+
+          <line x1="666" y1="268" x2="539" y2="268" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah)"/>
+          <text x="602" y="286" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.7">writes deal score</text>
+
+          <line x1="430" y1="361" x2="430" y2="304" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah)"/>
+          <line x1="470" y1="304" x2="470" y2="357" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah)"/>
+          <text x="488" y="326" font-size="11" fill="currentColor" fill-opacity="0.7">SELECT scored deals</text>
+          <text x="488" y="345" font-size="11" fill="currentColor" fill-opacity="0.7">rows</text>
+
+          <rect x="365" y="365" width="170" height="70" rx="3" fill="none" stroke="currentColor" stroke-opacity="0.75" stroke-width="1.3"/>
+          <text x="450" y="396" font-size="13" text-anchor="middle" fill="currentColor">REST API</text>
+          <text x="450" y="417" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">FastAPI, read-only</text>
+
+          <line x1="430" y1="556" x2="430" y2="439" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah)"/>
+          <line x1="470" y1="439" x2="470" y2="552" stroke="currentColor" stroke-width="1.3" marker-end="url(#ah)"/>
+          <text x="488" y="482" font-size="11" fill="currentColor" fill-opacity="0.7">GET /api/deals?store=&amp;under=</text>
+          <text x="488" y="501" font-size="11" fill="currentColor" fill-opacity="0.7">JSON: deals + price history</text>
+          <text x="412" y="494" font-size="11" text-anchor="end" fill="currentColor" fill-opacity="0.55">HTTPS</text>
+
+          <rect x="365" y="560" width="170" height="65" rx="3" fill="none" stroke="currentColor" stroke-opacity="0.75" stroke-width="1.3"/>
+          <text x="450" y="589" font-size="13" text-anchor="middle" fill="currentColor">Web UI</text>
+          <text x="450" y="609" font-size="11" text-anchor="middle" fill="currentColor" fill-opacity="0.6">React in the browser</text>
+
+        </g>
+      </svg>
+    </div>
+    <figcaption>Collection and analysis run as two independent background processes that never call each other &mdash; they hand off through Postgres. The browser can only reach data through the REST API, which reads and never writes.</figcaption>
+  </figure>
+</section>
+
+<section class="wide">
+  <h2>3 &nbsp;&middot;&nbsp; Component key</h2>
+  <table>
+    <thead>
+      <tr><th>Component</th><th>Side</th><th>Responsibility</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Collector</td>
+        <td>Back end</td>
+        <td>Wakes on a six-hour timer, calls CheapShark, writes one row per game per price it sees. Never analyzes anything.</td>
+      </tr>
+      <tr>
+        <td>PostgreSQL</td>
+        <td>Back end</td>
+        <td>Holds the game catalog, every price snapshot ever collected, and the analyzer's output. The only thing the two workers share.</td>
+      </tr>
+      <tr>
+        <td>Analyzer</td>
+        <td>Back end</td>
+        <td>Reads each game's stored history and computes its all-time low, median price, and a deal score for the current price. Never touches the network.</td>
+      </tr>
+      <tr>
+        <td>REST API</td>
+        <td>Back end</td>
+        <td>Read-only JSON endpoints over the scored results. The single boundary between the front end and everything behind it.</td>
+      </tr>
+      <tr>
+        <td>Web UI</td>
+        <td>Front end</td>
+        <td>Filter by store and budget, sort a deal table by score, open a game to see its price chart. Talks only to the REST API.</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
