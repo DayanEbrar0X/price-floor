@@ -96,18 +96,12 @@ Verified working before we committed to it. Fields that matter per listing: `gam
 
 ## Schema sketch
 
+Built, see the Schema section above. The `deals` table lands with the analyzer:
+
 ```
-games
-  id, cheapshark_game_id, title, steam_app_id, thumb_url
-
-price_snapshots
-  id, game_id, store_id, price, normal_price, collected_at
-
 deals
   game_id, store_id, current_price, all_time_low, median_90d, score, updated_at
 ```
-
-`price_snapshots` is append-only — it's the history everything else is derived from. `deals` is the analyzer's output and gets overwritten each run.
 
 ---
 
@@ -153,6 +147,56 @@ Routes:
 - `POST /echo_user_input` — echoes the input back, then lists matching deals
 - `GET /health` — returns `{"status": "ok"}`, used as a deploy smoke check
 
+## Database and the collector
+
+SQLite by default, so the whole thing runs with no server to install. Set `DATABASE_URL` to a Postgres URL and the same code points at Postgres instead — nothing else changes.
+
+Set up the schema and pull some prices:
+
+```
+pip install -r requirements-dev.txt
+alembic upgrade head
+python collector.py
+```
+
+`collector.py` is the separate data-collection process from the architecture diagram. It pulls the current top deals from CheapShark, adds any game it has not seen before, and writes a price snapshot. It only writes a row when the price actually moved — otherwise every run would dump another 120 identical rows and the history would be worthless.
+
+Sample run:
+
+```
+pulled 120 deals from cheapshark
+92 new games, 120 price changes, 0 unchanged
+120 snapshots in the db now
+```
+
+Run it again straight away and it reports `0 new games, 0 price changes, 120 unchanged`.
+
+Scheduling, once it lives on a server:
+
+```
+0 */6 * * * cd /path/to/price-floor && ./venv/bin/python collector.py >> collector.log 2>&1
+```
+
+Migrations are Alembic, in `migrations/versions/`. After changing anything in `src/models.py`:
+
+```
+alembic revision --autogenerate -m "what changed"
+alembic upgrade head
+```
+
+## Schema
+
+```
+games
+  id, cheapshark_id (unique), title, steam_app_id, thumb, first_seen
+
+price_snapshots
+  id, game_id -> games.id, store_id, price, normal_price, collected_at
+  index on (game_id, store_id)
+```
+
+`price_snapshots` is append-only. It is the history the deal score gets derived from, so nothing overwrites it.
+
 ## Deployment
 
 Hosted on Vercel, connected to this GitHub repo. Every push to `main` deploys automatically.
@@ -173,9 +217,9 @@ GitHub Actions runs the test suite on every push and pull request to `main`. Con
 - [x] Live CheapShark search wired into the echo
 - [x] Test suite, 8 tests
 - [x] GitHub repo and CI
-- [ ] Deploy to Vercel, submit the public URL
-- [ ] Postgres schema and migrations
-- [ ] Collector worker
+- [x] Deploy to Vercel, submit the public URL
+- [x] Schema and migrations
+- [x] Collector worker
 - [ ] Analyzer worker and scoring
 - [ ] REST API
 - [ ] Web UI: deal table and filters
@@ -186,7 +230,8 @@ GitHub Actions runs the test suite on every push and pull request to `main`. Con
 ## Notes
 
 - Repo: https://github.com/DayanEbrar0X/price-floor
-- The milestone 2 app reads CheapShark live on each request. It does not store anything yet — the collector, the database, and the deal score come next. Until then the table shows advertised discounts, which is exactly the thing the product is meant to improve on.
+- The deployed web app still reads CheapShark live on each request. It is not wired to the database yet, on purpose: Vercel's filesystem is ephemeral, so a SQLite file written there would not survive. The collector runs locally against its own database. Pointing both at a hosted Postgres is the next deploy step.
+- SQLite instead of Postgres for now. The README originally said Postgres, but a grader should be able to unzip this and run it without installing a database server. `DATABASE_URL` switches it over with no code change.
 - Heroku dropped its free tier in November 2022, so we deployed on Vercel instead. The grading criteria asks for a public URL, not a specific host.
 - Single data source on purpose. Multi-store collection means reconciling game titles across stores, which is a real problem but not the one this assignment grades. If more collection surface is wanted, a second collector process drops into the existing shape without changing anything else.
 - Rendered submission page: https://claude.ai/code/artifact/42be8cf1-9515-454b-acac-c5ceb957ae23

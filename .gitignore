@@ -5,3 +5,5 @@ __pycache__/
 .vercel
 .env
 .DS_Store
+*.db
+pricefloor.db
