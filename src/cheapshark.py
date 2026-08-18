@@ -1,8 +1,11 @@
+import os
+
 import requests
 
 BASE = "https://www.cheapshark.com/api/1.0"
-# they reject you with a generic UA, took me a while to figure that out
-UA = "PriceFloor/0.1 (student project; devuser1799@gmail.com)"
+# they reject you with a generic UA, took me a while to figure that out.
+# real contact goes in CONTACT_EMAIL on the server, this default is a throwaway
+UA = "PriceFloor/0.1 (%s)" % os.environ.get("CONTACT_EMAIL", "devuser1799@gmail.com")
 
 store_cache = {}
 

@@ -80,7 +80,7 @@ CheapShark. No API key, no signup, no OAuth — the reason we picked it over the
 The one requirement: send a descriptive User-Agent or it rejects you.
 
 ```
-curl -A "PriceFloor/0.1 (student project; devuser1799@gmail.com)" \
+curl -A "PriceFloor/0.1 (devuser1799@gmail.com)" \
   "https://www.cheapshark.com/api/1.0/deals?storeID=1&upperPrice=15&pageSize=5"
 ```
 
